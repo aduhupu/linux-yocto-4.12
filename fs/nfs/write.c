@@ -826,7 +826,7 @@ nfs_request_add_commit_list_locked(struct nfs_page *req, struct list_head *dst,
 {
 	set_bit(PG_CLEAN, &req->wb_flags);
 	nfs_list_add_request(req, dst);
-	cinfo->mds->ncommit++;
+	atomic_long_inc(&cinfo->mds->ncommit);
 }
 EXPORT_SYMBOL_GPL(nfs_request_add_commit_list_locked);
 
@@ -872,7 +872,7 @@ nfs_request_remove_commit_list(struct nfs_page *req,
 	if (!test_and_clear_bit(PG_CLEAN, &(req)->wb_flags))
 		return;
 	nfs_list_remove_request(req);
-	cinfo->mds->ncommit--;
+	atomic_long_dec(&cinfo->mds->ncommit);
 }
 EXPORT_SYMBOL_GPL(nfs_request_remove_commit_list);
 
@@ -979,7 +979,7 @@ out:
 unsigned long
 nfs_reqs_to_commit(struct nfs_commit_info *cinfo)
 {
-	return cinfo->mds->ncommit;
+	return atomic_long_read(&cinfo->mds->ncommit);
 }
 
 /* cinfo->inode->i_lock held by caller */
@@ -1020,8 +1020,10 @@ nfs_scan_commit(struct inode *inode, struct list_head *dst,
 {
 	int ret = 0;
 
+	if (!atomic_long_read(&cinfo->mds->ncommit))
+		return 0;
 	spin_lock(&cinfo->inode->i_lock);
-	if (cinfo->mds->ncommit > 0) {
+	if (atomic_long_read(&cinfo->mds->ncommit) > 0) {
 		const int max = INT_MAX;
 
 		ret = nfs_scan_commit_list(&cinfo->mds->list, dst,
@@ -1879,14 +1881,14 @@ int nfs_write_inode(struct inode *inode, struct writeback_control *wbc)
 	int ret = 0;
 
 	/* no commits means nothing needs to be done */
-	if (!nfsi->commit_info.ncommit)
+	if (!atomic_long_read(&nfsi->commit_info.ncommit))
 		return ret;
 
 	if (wbc->sync_mode == WB_SYNC_NONE) {
 		/* Don't commit yet if this is a non-blocking flush and there
 		 * are a lot of outstanding writes for this mapping.
 		 */
-		if (nfsi->commit_info.ncommit <= (nfsi->nrequests >> 1))
+		if (atomic_long_read(&nfsi->commit_info.ncommit) <= (nfsi->nrequests >> 1))
 			goto out_mark_dirty;
 
 		/* don't wait for the COMMIT response */

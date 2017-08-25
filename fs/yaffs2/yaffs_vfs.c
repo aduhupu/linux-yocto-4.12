@@ -167,6 +167,7 @@ static uint32_t YCALCBLOCKS(uint64_t partition_size, uint32_t block_size)
 
 #include <linux/uaccess.h>
 #include <linux/mtd/mtd.h>
+#include <linux/cred.h>
 
 #include "yportenv.h"
 #include "yaffs_trace.h"
@@ -238,7 +239,7 @@ MODULE_PARM(yaffs_gc_control, "i");
 
 
 #define update_dir_time(dir) do {\
-			(dir)->i_ctime = (dir)->i_mtime = CURRENT_TIME; \
+			(dir)->i_ctime = (dir)->i_mtime = current_time(dir); \
 		} while (0)
 
 static void yaffs_fill_inode_from_obj(struct inode *inode,

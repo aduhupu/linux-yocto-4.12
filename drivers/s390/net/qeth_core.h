@@ -563,7 +563,7 @@ enum qeth_cq {
 };
 
 struct qeth_ipato {
-	int enabled;
+	bool enabled;
 	int invert4;
 	int invert6;
 	struct list_head entries;

@@ -156,10 +156,6 @@ For 32-bit we have the following conventions - kernel is built with
 	.if \pop_rdi
 	popq %rdi
 	.endif
-	.endm
-
-	.macro icebp
-	.byte 0xf1
 .endm
 
 /*

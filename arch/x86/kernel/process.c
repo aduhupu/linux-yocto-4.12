@@ -292,9 +292,9 @@ static __always_inline void __speculative_store_bypass_update(unsigned long tifn
 	}
 }
 
-void speculative_store_bypass_update(void)
+void speculative_store_bypass_update(unsigned long tif)
 {
-	__speculative_store_bypass_update(current_thread_info()->flags);
+	__speculative_store_bypass_update(tif);
 }
 
 void __switch_to_xtra(struct task_struct *prev_p, struct task_struct *next_p,
